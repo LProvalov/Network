@@ -18,31 +18,63 @@ namespace ConsoleApp1
             {
                 listenSocket.Bind(ipPoint);
                 listenSocket.Listen(3);
-                ConcurrentDictionary<int, Socket> sockets = new ConcurrentDictionary<int, Socket>();
+                ConcurrentDictionary<string, Socket> sockets = new ConcurrentDictionary<string, Socket>();
 
-                var t = listenSocket.AcceptAsync();
-                t.ContinueWith(socket => {
-                    sockets.TryAdd(socket.Id, socket);
-                });
-                Socket handler = listenSocket.Accept();
-                byte[] receivedBuffer = new byte[1024];
-                ArraySegment<byte> buffer = new ArraySegment<byte>(receivedBuffer);
+                for (int i = 0; i < 3; i++)
+                {
+                    var t = listenSocket.AcceptAsync();
+                    t.ContinueWith(tsocket =>
+                    {
+                        if (tsocket.IsCompletedSuccessfully)
+                        {
+                            Socket handler = tsocket.Result;
+                            byte[] buffer = new byte[1024];
+                            try
+                            {
+                                string socketName = receiveMessage(handler);
+                                sockets.TryAdd(socketName, tsocket.Result);
 
+                                do
+                                {
+                                    try
+                                    {
+                                        string message = receiveMessage(handler);
+                                        Console.WriteLine("{0}: {1}", socketName, message);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine("Error: {0}", ex.Message);
+                                    }
+                                } while (handler.Connected);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine("Error: {0}", ex.Message);
+                            }
+                        }
+                    });
+                }
+                Console.WriteLine("server started...");
                 while (true)
                 {
-                    handler.ReceiveAsync(buffer, SocketFlags.Broadcast).ContinueWith(t => {
-                        Console.WriteLine("{0}", buffer);
-                    });
-                    
 
-                    handler.Receive(receivedBuffer);
-                    string receivedMsg = ASCIIEncoding.ASCII.GetString(receivedBuffer);
-                    Console.WriteLine("{0}", receivedMsg);
                 }
-            } catch (Exception ex)
+            } catch (SocketException ex)
             {
                 Console.WriteLine(ex.Message);
             }
+        }
+
+        static string receiveMessage(Socket socket)
+        {
+            byte[] buffer = new byte[1024];
+            socket.Receive(buffer);
+            int length = BitConverter.ToInt32(buffer, 0);
+
+            byte[] messageBuffer = new byte[length];
+            socket.Receive(messageBuffer);
+            string message = ASCIIEncoding.ASCII.GetString(messageBuffer);
+            return message;
         }
     }
 }

@@ -1,10 +1,8 @@
 # Objects
-SimpleNetwork/SimpleNetwork/obj
 SocketChat/ConsoleApp1/ConsoleApp1/obj
 SocketChatClient/SocketChatClient/obj
 
 # Bin
-SimpleNetwork/SimpleNetwork/bin
 SocketChat/ConsoleApp1/ConsoleApp1/bin
 SocketChatClient/SocketChatClient/bin
 
